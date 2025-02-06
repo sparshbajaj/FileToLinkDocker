@@ -1,38 +1,38 @@
-name: FileToLink CI/CD
+name: Build and Push Docker Image to GitHub Container Registry
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main  # Trigger on pushes to the main branch; adjust as needed
 
 jobs:
-  build-and-run:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/FileToLinkDocker
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
         with:
           context: .
-          tags: filetolink:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          load: true
-
-      - name: Run Thunder Bot
-        uses: addnab/docker-run-action@v3
-        with:
-          image: filetolink:latest
-          options: |
-            -w /FileToLink
-            -v ${{ github.workspace }}/data:/FileToLink/data
-          env:
-            API_ID: ${{ secrets.API_ID }}
-            API_HASH: ${{ secrets.API_HASH }}
-            BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          run: |
-            python -m Thunder
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/FileToLinkDocker:latest
+          labels: ${{ steps.meta.outputs.labels }}
