@@ -1,13 +1,14 @@
-name: Build and Deploy
+name: FileToLink CI/CD
 
 on: [push]
 
 jobs:
-  build-and-deploy:
+  build-and-run:
     runs-on: ubuntu-latest
+    env:
+      WORKDIR: /FileToLink
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -17,19 +18,20 @@ jobs:
         with:
           context: .
           tags: filetolink:latest
-          load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          push: false
+          load: true
 
-      - name: Run Deployment
+      - name: Run Thunder Bot
         uses: addnab/docker-run-action@v3
         with:
           image: filetolink:latest
-          envs: |
-            API_ID=${{ secrets.API_ID }}
-            API_HASH=${{ secrets.API_HASH }}
-            BOT_TOKEN=${{ secrets.BOT_TOKEN }}
-          options: --restart unless-stopped
+          options: |
+            -w ${{ env.WORKDIR }}
+            -v ${{ github.workspace }}/data:${{ env.WORKDIR }}/data
+          env:
+            API_ID: ${{ secrets.API_ID }}
+            API_HASH: ${{ secrets.API_HASH }}
+            BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           run: |
-            python3 bot.py
+            python -m Thunder
