@@ -1,14 +1,15 @@
 name: FileToLink CI/CD
 
-on: [push]
+on:
+  push:
+    branches: [main]
 
 jobs:
   build-and-run:
     runs-on: ubuntu-latest
-    env:
-      WORKDIR: /FileToLink
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -27,8 +28,8 @@ jobs:
         with:
           image: filetolink:latest
           options: |
-            -w ${{ env.WORKDIR }}
-            -v ${{ github.workspace }}/data:${{ env.WORKDIR }}/data
+            -w /FileToLink
+            -v ${{ github.workspace }}/data:/FileToLink/data
           env:
             API_ID: ${{ secrets.API_ID }}
             API_HASH: ${{ secrets.API_HASH }}
